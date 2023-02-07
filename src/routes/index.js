@@ -2,7 +2,7 @@ const { Router } = require("express");
 const axios = require("axios");
 // Importar todos los routers;
 // Ejemplo: const authRouter = require('./auth.js');
-const { Breed, Temperament } = require("../db");
+const { Breed, Temperament, BreedTemperament } = require("../db");
 
 const router = Router();
 
@@ -11,17 +11,61 @@ const router = Router();
 
 const getApiData = async () => {
   const apiURL = await axios.get("https://api.thedogapi.com/v1/breeds");
-  const apiData = await apiURL.data.map((i) => ({
-    id: i.id,
-    name: i.name,
-    height: i.height.metric,
-    weight: i.weight.metric === "NaN" ? "20" : i.weight.metric,
-    lifeSpan: i.life_span,
-    image: i.image,
-    temperament: i.temperament ? i.temperament : "Temperament not defined",
-  }));
-  return apiData;
+
+  // console.log(
+  //   apiURL.data[0].temperament
+  //     .toString()
+  //     .split(",")
+  //     .map((t) => t.trim())
+  // );
+
+  // const apiData = await apiURL.data.map((i) => ({
+  //   name: i.name,
+  //   height: i.height.metric,
+  //   weight: i.weight.metric,
+  //   life_span: i.life_span,
+  //   image: i.image.url,
+  //   temperament: i.temperament,
+  // }));
+  // console.log(apiData[0]);
+
+  for (let breed of apiURL.data) {
+    let temps = breed.temperament;
+    if (typeof temps === "string") {
+      temps = temps.split(",").map((t) => t.trim());
+    } else {
+      temps = ["Not available"];
+    }
+
+    let currentBreed = {
+      name: breed.name,
+      height: breed.height.metric,
+      weight: breed.weight.metric,
+      life_span: breed.life_span,
+      image: breed.image.url,
+      createdInDb: false,
+    };
+
+    const savedBreed = await Breed.findOrCreate({
+      where: currentBreed,
+      raw: true,
+    });
+
+    // console.log(savedBreed[0].name);
+
+    for (let temp of temps) {
+      let currentTemp = await Temperament.findOrCreate({
+        where: { name: temp },
+        raw: true,
+      });
+      // console.log(currentTemp[0].id);
+      BreedTemperament.findOrCreate({
+        where: { breedId: savedBreed[0].id, temperamentId: currentTemp[0].id },
+      });
+    }
+  }
 };
+getApiData();
 
 const getDbData = async () => {
   //get data from local db
@@ -43,7 +87,7 @@ const getDbData = async () => {
       height: el.height,
       lifeSpan: el.life_span,
       image: el.image,
-      createdInDb: true,
+      createdInDb: el.createdInDb,
       temperament: el.temperaments.map((e) => e.name).join(", "), // Personally I'd rather just navigate the array. Check again later.
     };
   });
@@ -54,11 +98,11 @@ const getDbData = async () => {
 const fetchAllBreeds = async () => {
   // const allBreeds = await getApiData().concat(await getDbData());
 
-  const apiData = await getApiData();
+  // const apiData = await getApiData();
   const dbData = await getDbData();
-  const allBreeds = apiData.concat(dbData);
+  // const allBreeds = apiData.concat(dbData);
 
-  return allBreeds;
+  return dbData;
 };
 
 router.get("/dogs", async (req, res) => {
@@ -99,6 +143,7 @@ router.post("/dogs", async (req, res) => {
     if (!name || !height || !weight || !temperament.length) {
       throw new Error("Missing values!");
     }
+
     const newBreed = await Breed.create({
       name,
       height,
@@ -111,6 +156,8 @@ router.post("/dogs", async (req, res) => {
       where: { name: temperament },
     });
 
+    // console.log(matchingTemperament);
+
     newBreed.addTemperament(matchingTemperament);
 
     res.status(200).json("New breed was created!");
@@ -121,6 +168,8 @@ router.post("/dogs", async (req, res) => {
 
 router.get("/temperaments", async (req, res) => {
   try {
+    //
+
     const tempApi = await axios("https://api.thedogapi.com/v1/breeds");
 
     const temperamentDb = tempApi.data
@@ -135,6 +184,8 @@ router.get("/temperaments", async (req, res) => {
     filteredTemperaments.forEach((t) =>
       Temperament.findOrCreate({ where: { name: t } })
     );
+
+    //
     const allTemperaments = await Temperament.findAll();
     return res.status(200).json(allTemperaments);
   } catch (error) {

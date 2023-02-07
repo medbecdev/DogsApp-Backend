@@ -48,6 +48,15 @@ Breed.belongsToMany(Temperament, { through: "BreedTemperament" });
 
 Temperament.belongsToMany(Breed, { through: "BreedTemperament" });
 
+(async () => {
+  try {
+    await sequelize.authenticate();
+    console.log("Connection has been established successfully.");
+  } catch (error) {
+    console.error("Unable to connect to the database:", error);
+  }
+})();
+
 module.exports = {
   ...sequelize.models, // para poder importar los modelos así: const { Product, User } = require('./db.js');
   conn: sequelize, // para importart la conexión { conn } = require('./db.js');
