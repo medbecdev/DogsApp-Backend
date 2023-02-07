@@ -65,7 +65,7 @@ const getApiData = async () => {
     }
   }
 };
-// getApiData();
+getApiData();
 
 const getDbData = async () => {
   //get data from local db
