@@ -9,6 +9,7 @@ const router = Router();
 // Configurar los routers
 // Ejemplo: router.use('/auth', authRouter);
 
+
 const getDbData = async () => {
   //get data from local db
   const dbData = await Breed.findAll({

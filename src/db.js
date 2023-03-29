@@ -6,11 +6,13 @@ const { PGUSER, PGPASSWORD, PGHOST, PGPORT, PGDATABASE } = process.env;
 
 const sequelize = new Sequelize(
   `postgres://${PGUSER}:${PGPASSWORD}@${PGHOST}:${PGPORT}/${PGDATABASE}`,
+
   {
     logging: false, // set to console.log to see the raw SQL queries
     native: false, // lets Sequelize know we can use pg-native for ~30% more speed
   }
 );
+
 const basename = path.basename(__filename);
 
 const modelDefiners = [];
@@ -25,7 +27,7 @@ fs.readdirSync(path.join(__dirname, "/models"))
     modelDefiners.push(require(path.join(__dirname, "/models", file)));
   });
 
-console.log(fs.readdirSync(path.join(__dirname, "/models")));
+// console.log(fs.readdirSync(path.join(__dirname, "/models")));
 
 // Injectamos la conexion (sequelize) a todos los modelos
 modelDefiners.forEach((model) => model(sequelize));
