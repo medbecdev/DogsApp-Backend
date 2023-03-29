@@ -4,8 +4,6 @@ const fs = require("fs");
 const path = require("path");
 const { PGUSER, PGPASSWORD, PGHOST, PGPORT, PGDATABASE } = process.env;
 
-// postgresql://postgres:7W9OLhnpwwMq6ORhnTfb@containers-us-west-202.railway.app:6031/railway
-
 const sequelize = new Sequelize(
   `postgres://${PGUSER}:${PGPASSWORD}@${PGHOST}:${PGPORT}/${PGDATABASE}`,
   {
